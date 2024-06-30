@@ -4,13 +4,22 @@
 #include<iostream>
 #include "Shader.h"
 
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "Camera.h"
 
 #include "Model.h"
+
+//imgui
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+
+#include <windows.h>
+#include "Application.h"
+
+
 
 #pragma region Model Data
 float vertices[] = {
@@ -326,10 +335,69 @@ int main()
 #pragma endregion
 
     //VBO绘制4个点需要传给VAO六个参数浪费性能，因此使用EBO（索引缓冲对象）
-    
-    
+
+#pragma region Imgui
+      // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
+
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+  
+#pragma endregion
     while (!glfwWindowShouldClose(window))//glfwWindowShouldClose判断用户关不关弹窗
     {
+#pragma region Imgui
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ///*
+        //* 添加自己的代码,App的实现见下面的代码
+        //*/
+     
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+            ImGui::Checkbox("Another Window", &show_another_window);
+
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                counter++;
+            ImGui::SameLine();
+            ImGui::Text("counter = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::End();
+        }
+        //App::RenderUI();
+
+        //// Rendering
+        ImGui::Render();
+#pragma endregion
+
+
+
         //处理输入
         processInput(window);
         //camera.UpdateCameraPos();
@@ -356,7 +424,7 @@ int main()
         //清屏
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-           
+       
 
             glStencilFunc(GL_ALWAYS, 1, 0xFF); // 所有的片段都应该更新模板缓冲
             glStencilMask(0xFF); // 启用模板缓冲写入
@@ -416,7 +484,9 @@ int main()
             //glEnable(GL_DEPTH_TEST);
 #pragma endregion
        
-        
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
         glfwSwapBuffers(window);//交换用于在此渲染迭代期间渲染的颜色缓冲区(双缓冲区，防止屏幕撕裂doubleBuffer,前缓冲（最终输出的）后缓冲（绘制所有渲染命令）)
         glfwPollEvents();//检查是否触发了任何事件（如键盘输入或鼠标移动事件），更新窗口状态，并调用相应的函数（我们可以通过回调方法注册）
         //一般在最后一行获取输入，下一行的开始处理
