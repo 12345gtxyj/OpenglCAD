@@ -41,8 +41,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 		vertexSource = vertexString.c_str();
 		fragmentSource = fragmentString.c_str();
 
-		cout<< vertexSource<<endl;
-		cout << fragmentSource << endl;
+		//cout<< vertexSource<<endl;
+		//cout << fragmentSource << endl;
 
 		unsigned int vertex, fragment;
 		vertex = glCreateShader(GL_VERTEX_SHADER);

@@ -6,12 +6,11 @@
 
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "Camera.h"
 
-
+#include "Model.h"
 
 #pragma region Model Data
 float vertices[] = {
@@ -61,13 +60,15 @@ float vertices[] = {
 #pragma endregion
 
 #pragma region Camera Declare
-Camera camera(glm::vec3(1, 0, 0), -60.0f, 0, glm::vec3(0, 1, 0));
+Camera camera(glm::vec3(0, 0,-5),0, 0, glm::vec3(0, 1, 0));
 #pragma endregion
 
 #pragma region INputDeclare
 float lastX;
 float lastY;
 bool firstMouse = true;
+// 记录鼠标按钮状态的变量
+bool mouse_button_pressed = false;
 unsigned int loadTexture(char const* path);
 void processInput(GLFWwindow* window)
 {
@@ -96,20 +97,37 @@ void processInput(GLFWwindow* window)
         camera.Position += glm::normalize(glm::cross(camera.Forward, camera.Up)) * cameraSpeed;
 
 }
-void mouse_callback(GLFWwindow* window,double xPos,double yPos)
-{
-    if (firstMouse==true)
-    {
-        lastX = xPos;
-        lastY = yPos;
-        firstMouse = false;
+// 鼠标移动回调函数
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (mouse_button_pressed) {
+        if (firstMouse) {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        float deltaX = xpos - lastX;
+        float deltaY = ypos - lastY;
+
+        lastX = xpos;
+        lastY = ypos;
+
+        // 调用你的摄像机处理函数
+        camera.ProcessMouseMovement(deltaX, deltaY);
     }
-    float deltaX, deltaY;
-    deltaX = xPos - lastX;
-    deltaY = yPos - lastY;
-    lastX = xPos;
-    lastY = yPos;
-    camera.ProcessMouseMovement(deltaX, deltaY);
+}
+
+// 鼠标按钮回调函数
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            mouse_button_pressed = true;
+        }
+        else if (action == GLFW_RELEASE) {
+            mouse_button_pressed = false;
+            firstMouse = true; // 当按钮释放时重置 firstMouse 以避免跳动
+        }
+    }
 }
 #pragma endregion
 
@@ -138,7 +156,7 @@ unsigned int LoadImageToGPU(const char* filename,GLint internalFormat,GLenum for
 
 int main()
 {
-
+    
 #pragma region  openWindow
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -160,7 +178,11 @@ int main()
     //隐藏游标
    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     //鼠标点击事件回调
-    glfwSetCursorPosCallback(window, mouse_callback);
+    // 设置鼠标移动回调函数
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+
+    // 设置鼠标按钮回调函数
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
    
    
    //初始化GLEW
@@ -179,9 +201,22 @@ int main()
     //glEnable(GL_CULL_FACE);//开启面剔除
     //glCullFace(GL_FRONT);
 #pragma endregion
+   
+    /// <summary>
+    /// 应完成glfw初始化
+    /// </summary>
+    /// <returns></returns>
 
-    Shader* testShader =new Shader("VertexSource.vert","FragmentSource.frag ");
+
+    
+
+
+
+    Shader* testShader = new Shader("VertexSource.vert", "FragmentSource.frag");
     Shader* lightShader=new Shader("LightVert.vert", "LightFrag.frag ");
+
+
+    Model testModel("nanosuit/nanosuit.obj");
 #pragma region 以下步骤实现把数据传给GPU  包括绑定VAO，VBO，EBO
 
     unsigned int VAO;//VAO的作用就是顶点属性调用都会储存在这个VAO中
@@ -201,8 +236,8 @@ int main()
 
 #pragma region 加载纹理并绑定
     unsigned int textureA, textureB;
-    textureA = LoadImageToGPU("container.jpg",GL_RGB,GL_RGB,0);
-    textureB = LoadImageToGPU("awesomeface.png", GL_RGBA, GL_RGBA, 0);
+    textureA = LoadImageToGPU("container2.png", GL_RGBA, GL_RGBA, 0);
+    //textureB = LoadImageToGPU("awesomeface.png", GL_RGBA, GL_RGBA, 0);
  
 #pragma endregion
 
@@ -251,8 +286,8 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
     
-    unsigned int  textureC = LoadImageToGPU("container2.png", GL_RGBA, GL_RGBA, 0);
-    unsigned int  textureD = LoadImageToGPU("container2_specular.png", GL_RGBA, GL_RGBA, 1);
+    /*unsigned int  textureC = LoadImageToGPU("container2.png", GL_RGBA, GL_RGBA, 0);
+    unsigned int  textureD = LoadImageToGPU("container2_specular.png", GL_RGBA, GL_RGBA, 1);*/
 
     // 在此之前不要忘记首先 use 对应的着色器程序（来设定uniform）
     testShader->use();
@@ -270,12 +305,13 @@ int main()
  ///变换操作
     glm::mat4 trans;
     glm::mat4 modelMat;
-    modelMat=glm::rotate(modelMat, glm::radians(0.0f), glm::vec3(0, 1.0, 1.0));
+    glm::vec3 personPos(0.0f, -10.0f, 10.0f);
+    modelMat= glm::translate(modelMat, personPos);
     glm::mat4 modelMat1;
     modelMat1 = glm::rotate(modelMat1, glm::radians(0.0f), glm::vec3(0, 1.0, 1.0));
     modelMat1 = glm::scale(modelMat1, glm::vec3(1.1, 1.1, 1.1));
     glm::mat4 viewMat;
-    viewMat=glm::translate(trans, glm::vec3(0, 0, -3.0f));
+   // viewMat=glm::translate(trans, glm::vec3(0, 0, -3.0f));
     glm::mat4 projMat;
     projMat = glm::perspective(glm::radians(45.0f), (float)800/ (float)600, 0.1f, 100.0f);   
      //由相机计算的viewmat
@@ -299,7 +335,7 @@ int main()
         //camera.UpdateCameraPos();
         viewMat = camera.GetViewMatrix();
         //清屏
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//设置清屏颜色
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);//设置清屏颜色
 
         lightShader->use();
         testShader->use();
@@ -320,7 +356,8 @@ int main()
         //清屏
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-     
+           
+
             glStencilFunc(GL_ALWAYS, 1, 0xFF); // 所有的片段都应该更新模板缓冲
             glStencilMask(0xFF); // 启用模板缓冲写入
 
@@ -333,23 +370,23 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(testShader->ID, "viewMat"), 1, GL_FALSE, glm::value_ptr(viewMat));
             glUniformMatrix4fv(glGetUniformLocation(testShader->ID, "projMat"), 1, GL_FALSE, glm::value_ptr(projMat));
             //testShader->setMat4("model", model);
-
+            testModel.Draw(*testShader);
 
               //  Set Model
             glBindVertexArray(VAO);
             //DrawCall
             glDrawArrays(GL_TRIANGLES, 0, 36);
 
-            //第二个cube
-            //lightShader->use();
-            //lightShader->setVec3("viewPos", camera.Position);
-            //lightShader->setVec3("lightPos", lightPos);
-            //glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "modelMat"), 1, GL_FALSE, glm::value_ptr(modelMat1));
-            //glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "viewMat"), 1, GL_FALSE, glm::value_ptr(viewMat));
-            //glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "projMat"), 1, GL_FALSE, glm::value_ptr(projMat));
-            //// testShader->setMat4("model", model);
+           // 第二个cube
+            lightShader->use();
+            lightShader->setVec3("viewPos", camera.Position);
+            lightShader->setVec3("lightPos", lightPos);
+            glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "modelMat"), 1, GL_FALSE, glm::value_ptr(modelMat1));
+            glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "viewMat"), 1, GL_FALSE, glm::value_ptr(viewMat));
+            glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "projMat"), 1, GL_FALSE, glm::value_ptr(projMat));
+            // testShader->setMat4("model", model);
 
-
+           
             //   //  Set Model
             //glBindVertexArray(VAO);
             ////DrawCall
@@ -358,25 +395,25 @@ int main()
             glStencilMask(0x00);
             glDisable(GL_DEPTH_TEST);
 #pragma region 光照
-            unsigned int lightVAO;
-            glGenVertexArrays(1, &lightVAO);
-            glBindVertexArray(lightVAO);
-            // 只需要绑定VBO不用再次设置VBO的数据，因为箱子的VBO数据中已经包含了正确的立方体顶点数据
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            // 设置灯立方体的顶点属性（对我们的灯来说仅仅只有位置数据）
-            glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-            glEnableVertexAttribArray(6);
+            //unsigned int lightVAO;
+            //glGenVertexArrays(1, &lightVAO);
+            //glBindVertexArray(lightVAO);
+            //// 只需要绑定VBO不用再次设置VBO的数据，因为箱子的VBO数据中已经包含了正确的立方体顶点数据
+            //glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            //// 设置灯立方体的顶点属性（对我们的灯来说仅仅只有位置数据）
+            //glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+            //glEnableVertexAttribArray(6);
 
-            lightShader->use();
-            glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "modelMat"), 1, GL_FALSE, glm::value_ptr(modelMat1));
-            glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "viewMat"), 1, GL_FALSE, glm::value_ptr(viewMat));
-            glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "projMat"), 1, GL_FALSE, glm::value_ptr(projMat));
-            glBindVertexArray(lightVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            //lightShader->use();
+            //glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "modelMat"), 1, GL_FALSE, glm::value_ptr(modelMat1));
+            //glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "viewMat"), 1, GL_FALSE, glm::value_ptr(viewMat));
+            //glUniformMatrix4fv(glGetUniformLocation(lightShader->ID, "projMat"), 1, GL_FALSE, glm::value_ptr(projMat));
+            //glBindVertexArray(lightVAO);
+            //glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
-            glStencilMask(0xFF);
-            glEnable(GL_DEPTH_TEST);
+            //glStencilMask(0xFF);
+            //glEnable(GL_DEPTH_TEST);
 #pragma endregion
        
         
