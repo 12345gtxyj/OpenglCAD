@@ -31,10 +31,10 @@ void Camera::ProcessMouseMovement(float deltaX, float deltaY)
     deltaY*= sensitivity;
     yaw += deltaX;
     pitch += deltaY;
-    if (pitch > 89.0f)
+   /* if (pitch > 89.0f)
         pitch = 89.0f;
     if (pitch < -89.0f)
-        pitch = -89.0f;
+        pitch = -89.0f;*/
     Forward.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
     Forward.y = sin(glm::radians(pitch));
     Forward.z = cos(glm::radians(pitch)) * cos(glm::radians(yaw));

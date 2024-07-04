@@ -12,7 +12,7 @@ public:
 	glm::vec3 Right;
 	glm::vec3 Up;
 	glm::vec3 WorldUp;
-	float speedZ;
+	float speed=0.1f;
 	float yaw;
 	float pitch;
 	void ProcessMouseMovement(float deltaX,float deltaY);
