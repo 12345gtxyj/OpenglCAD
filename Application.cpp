@@ -68,13 +68,13 @@ void Application::RenderUI()
         ImGui::Checkbox("LightPos", &isShowLightPos);
         if (isShowLightPos) {
             ImGui::SetNextItemWidth(100);
-            ImGui::SliderFloat("x", &lightPos.x, -1.0f, 1.0f);
+            ImGui::SliderFloat("x", &lightPos.x, -10.0f, 10.0f);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(100);
-            ImGui::SliderFloat("y", &lightPos.y, -1.0f, 1.0f);
+            ImGui::SliderFloat("y", &lightPos.y, -10.0f, 10.0f);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(100);
-            ImGui::SliderFloat("z", &lightPos.z, -1.0f, 1.0f);
+            ImGui::SliderFloat("z", &lightPos.z, -10.0f, 10.0f);
         }
         ImGui::Checkbox("Position", &isShowPos);
         if (isShowPos) {

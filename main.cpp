@@ -180,7 +180,8 @@
 //    Shader* testShader = new Shader("PBR.vert", "PBR.frag");
 //
 //
-//    Model testModel("cube/cube.obj");
+//    Model testModel("nanosuit/nanosuit.obj");
+//    Model lightModel("cube/cube.obj");
 //#pragma region 以下步骤实现把数据传给GPU  包括绑定VAO，VBO，EBO
 //
 //    unsigned int VAO;//VAO的作用就是顶点属性调用都会储存在这个VAO中
@@ -200,7 +201,7 @@
 //    //cout << "加载" << endl;
 //#pragma region 加载纹理并绑定
 //    unsigned int textureA, textureB, textureC, textureD, textureE;
-//    textureA = LoadImageToGPU("container2.png",  0);
+//    textureA = LoadImageToGPU("awesomeface.png",  0);
 //    textureB = LoadImageToGPU("PBR/PBR_metallic.png", 1);
 //    textureC = LoadImageToGPU("PBR/PBR_normal.png", 2);
 //    textureD = LoadImageToGPU("PBR/PBR_roughness.png", 3);
@@ -320,7 +321,21 @@
 //            testModel.Draw(*testShader);
 //
 //
-//           
+//            testShader->use();
+//            testShader->setVec3("camPos", camera.Position);
+//            testShader->setVec3("lightPos", app.lightPos);
+//            glUniform1i(glGetUniformLocation(testShader->ID, "material.metallicMap"), 0); // 手动设置
+//            glUniform1i(glGetUniformLocation(testShader->ID, "material.normalMap"), 0); // 手动设置
+//            glUniform1i(glGetUniformLocation(testShader->ID, "material.roughnessMap"), 0); // 手动设置
+//            glUniform1i(glGetUniformLocation(testShader->ID, "material.albedoMap"), 0); // 手动设置
+//            glUniform1i(glGetUniformLocation(testShader->ID, "material.aoMap"), 0); // 手动设置
+//            glm::mat4 lightM;
+//            lightM= glm::scale(lightM, app.scale);
+//            lightM = glm::translate(lightM, app.lightPos);
+//            glUniformMatrix4fv(glGetUniformLocation(testShader->ID, "modelMat"), 1, GL_FALSE, glm::value_ptr(lightM));
+//            glUniformMatrix4fv(glGetUniformLocation(testShader->ID, "viewMat"), 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix()));
+//            glUniformMatrix4fv(glGetUniformLocation(testShader->ID, "projMat"), 1, GL_FALSE, glm::value_ptr(projMat));
+//            //lightModel.Draw(*testShader);
 //            //   //  Set Model
 //            //glBindVertexArray(VAO);
 //            ////DrawCall

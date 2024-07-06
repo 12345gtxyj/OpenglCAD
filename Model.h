@@ -101,7 +101,7 @@ private:
             vector.y = mesh->mVertices[i].y;
             vector.z = mesh->mVertices[i].z;
             vertex.Position = vector;
-            cout << "vertex" << i <<" "<< vector.x<<","<< vector.y<<","<< vector.z<<"," << endl;
+            //cout << "vertex" << i <<" "<< vector.x<<","<< vector.y<<","<< vector.z<<"," << endl;
             // normals
             if (mesh->HasNormals())
             {
@@ -140,10 +140,10 @@ private:
         {
             aiFace face = mesh->mFaces[i];
             // retrieve all indices of the face and store them in the indices vector
-            cout << "face" << i << endl;
+            //cout << "face" << i << endl;
             for (unsigned int j = 0; j < face.mNumIndices; j++)
             {
-                cout << face.mIndices[j] << " ";
+               // cout << face.mIndices[j] << " ";
                 indices.push_back(face.mIndices[j]);
             }
         }

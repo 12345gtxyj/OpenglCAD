@@ -55,11 +55,9 @@ struct Triangle_encoded {
     glm::vec3 n1, n2, n3;    // 顶点法线
     glm::vec3 emissive;      // 自发光参数
     glm::vec3 baseColor;     // 颜色
-    glm::vec3 param1;        // (subsurface, metallic, specular)
-    glm::vec3 param2;        // (specularTint, roughness, anisotropic)
-    glm::vec3 param3;        // (sheen, sheenTint, clearcoat)
-    glm::vec3 param4;        // (clearcoatGloss, IOR, transmission)
 };
+
+void LoadCube(std::vector<Triangle_encoded>& triangles_encoded, Model& testModel, glm::vec3 pos, glm::vec3 baseColor, glm::vec3 emssion);
 #pragma endregion
 
 void bindData(bool finalPass = false) {
@@ -142,34 +140,11 @@ int main()
     Shader* testShader = new Shader("raytracing/vshader.vert", "raytracing/fshader.frag");
     Model testModel("cube/cube.obj");
     // 三角形数组
-    std::vector<Triangle_encoded> triangles_encoded;
+    std::vector<Triangle_encoded> triangles_encoded= std::vector<Triangle_encoded>();
     cout << testModel.meshes[0].indices.size() << endl;
-    for (int i = 0; i < testModel.meshes[0].indices.size(); i += 3)
-    {
-        Triangle_encoded triangle;
-        triangle.p1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Position;
-        triangle.p2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Position;
-        triangle.p3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Position;
-        triangle.n1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Normal;
-        triangle.n2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Normal;
-        triangle.n3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Normal;
-        triangle.baseColor = glm::vec3(1, 0, 0);
-        triangle.emissive = glm::vec3(0.5, 0, 0);
-        triangles_encoded.push_back(triangle);
-    }
-    for (int i = 0; i < testModel.meshes[0].indices.size(); i += 3)
-    {
-        Triangle_encoded triangle;
-        triangle.p1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Position + glm::vec3(-1, -2.3, 0);
-        triangle.p2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Position + glm::vec3(-1, -2.3, 0);
-        triangle.p3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Position + glm::vec3(-1, -2.3, 0);
-        triangle.n1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Normal;
-        triangle.n2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Normal;
-        triangle.n3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Normal;
-        triangle.baseColor = glm::vec3(0, 1, 0);
-        triangle.emissive = glm::vec3(0, 0.5, 0);
-        triangles_encoded.push_back(triangle);
-    }
+    LoadCube(triangles_encoded, testModel, glm::vec3(0), glm::vec3(0,1,0), glm::vec3(0,0.5,0));
+    LoadCube(triangles_encoded, testModel, glm::vec3(-1, -2.3, 0),glm::vec3(1,0,0), glm::vec3(0.5,0,0));
+
     unsigned int tbo0;
     glGenBuffers(1, &tbo0);
     glBindBuffer(GL_TEXTURE_BUFFER, tbo0);
@@ -260,4 +235,21 @@ void PrepareRender(Shader* testShader, Model& testModel)
 
 
 
+}
+
+void LoadCube(std::vector<Triangle_encoded>& triangles_encoded, Model& testModel,glm::vec3 pos, glm::vec3 baseColor,glm::vec3 emssion)
+{
+    for (int i = 0; i < testModel.meshes[0].indices.size(); i += 3)
+    {
+        Triangle_encoded triangle;
+        triangle.p1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Position + pos;
+        triangle.p2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Position + pos;
+        triangle.p3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Position + pos;
+        triangle.n1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Normal;
+        triangle.n2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Normal;
+        triangle.n3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Normal;
+        triangle.baseColor = baseColor;
+        triangle.emissive = emssion;
+        triangles_encoded.push_back(triangle);
+    }
 }
