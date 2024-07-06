@@ -4,23 +4,25 @@
 Application::Application()
     : position(0.0f, 0.0f, 0.0f), rotation(0.0f, 0.0f, 0.0f),scale(1.0f,1.0f,1.0f), isShowPos(false), isShowRot(false), text("") {}
 // 初始化变量
-
+static float frameCount = 0.0f;
 static float fps = 0.0f;
 static float previousTime = 0.0f;
 
 void Application::UpdateFPS() {
     float currentTime = ImGui::GetTime();
     frameCount++;
-
+    frameCounter++;
     // 每秒更新一次FPS
     if (currentTime - previousTime >= 1.0f) {
         fps = frameCount / (currentTime - previousTime);
         previousTime = currentTime;
         frameCount = 0;
     }
+  
 }
 void Application::Init(GLFWwindow* window)
 {
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -55,6 +57,7 @@ void Application::RenderUI()
     // 在渲染函数中调用UpdateFPS
     UpdateFPS();
     ImGui::Text("FPS: %.1f", fps);
+    ImGui::Text("frameCounter: %d", frameCounter);
     // 按钮在单击时返回true（大多数小部件在编辑/激活时返回true）
     //if (ImGui::Button("EditMode"))
     //{

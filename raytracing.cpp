@@ -24,6 +24,8 @@
 unsigned int FBO = 0;
 unsigned int vao, vbo;
 unsigned int trianglesTextureBuffer;
+unsigned int lastFrame;
+
 glm::mat4 projMat;
 #pragma region Camera Declare
 Camera camera(glm::vec3(0, 0, -5), 0, 0, glm::vec3(0, 1, 0));
@@ -37,6 +39,17 @@ bool firstMouse = true;
 // 记录鼠标按钮状态的变量
 bool mouse_button_pressed = false;
 void PrepareRender(Shader* testShader, Model& testModel);
+Application app;
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        // 清空颜色缓冲区和深度缓冲区
+        app.frameCounter = 0;
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lastFrame, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+}
 struct Triangle_encoded {
     glm::vec3 p1, p2, p3;    // 顶点坐标
     glm::vec3 n1, n2, n3;    // 顶点法线
@@ -48,10 +61,18 @@ struct Triangle_encoded {
     glm::vec3 param4;        // (clearcoatGloss, IOR, transmission)
 };
 #pragma endregion
-Application app;
+
 void bindData(bool finalPass = false) {
-    if (!finalPass) glGenFramebuffers(1, &FBO);
+    // 创建并绑定帧缓冲对象和纹理
+    glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glGenTextures(1, &lastFrame);
+    glBindTexture(GL_TEXTURE_2D, lastFrame);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lastFrame, 0);
+
 
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -64,24 +85,27 @@ void bindData(bool finalPass = false) {
     glEnableVertexAttribArray(0);   // layout (location = 0) 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 void draw(unsigned int program) {
     glUseProgram(program);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-       // std::cout << "Framebuffer is not complete!" << std::endl;
+        std::cout << "Framebuffer is not complete!" << std::endl;
     }
+    glBindVertexArray(vao);
+
+    glViewport(0, 0, width, height);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindVertexArray(vao);
     glViewport(0, 0, width, height);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    glBindVertexArray(0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(0);
 }
+
 int main()
 {
 
@@ -94,7 +118,7 @@ int main()
 
 
     //初始化GLFW
-    GLFWwindow* window = glfwCreateWindow(width,height, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(width, height, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -102,7 +126,7 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
-
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     //初始化GLEW
     glewExperimental = true;
     if (glewInit() != GLEW_OK)
@@ -115,10 +139,10 @@ int main()
 #pragma endregion
 
 
-    Shader* testShader = new Shader( "raytracing/vshader.vert", "raytracing/fshader.frag");
+    Shader* testShader = new Shader("raytracing/vshader.vert", "raytracing/fshader.frag");
     Model testModel("cube/cube.obj");
     // 三角形数组
-    std::vector<Triangle_encoded> triangles_encoded(testModel.meshes[0].indices.size()/3);
+    std::vector<Triangle_encoded> triangles_encoded;
     cout << testModel.meshes[0].indices.size() << endl;
     for (int i = 0; i < testModel.meshes[0].indices.size(); i += 3)
     {
@@ -129,8 +153,23 @@ int main()
         triangle.n1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Normal;
         triangle.n2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Normal;
         triangle.n3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Normal;
-        triangles_encoded[i / 3] = triangle;
-    } 
+        triangle.baseColor = glm::vec3(1, 0, 0);
+        triangle.emissive = glm::vec3(0.5, 0, 0);
+        triangles_encoded.push_back(triangle);
+    }
+    for (int i = 0; i < testModel.meshes[0].indices.size(); i += 3)
+    {
+        Triangle_encoded triangle;
+        triangle.p1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Position + glm::vec3(-1, -2.3, 0);
+        triangle.p2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Position + glm::vec3(-1, -2.3, 0);
+        triangle.p3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Position + glm::vec3(-1, -2.3, 0);
+        triangle.n1 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i]].Normal;
+        triangle.n2 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 1]].Normal;
+        triangle.n3 = testModel.meshes[0].vertices[testModel.meshes[0].indices[i + 2]].Normal;
+        triangle.baseColor = glm::vec3(0, 1, 0);
+        triangle.emissive = glm::vec3(0, 0.5, 0);
+        triangles_encoded.push_back(triangle);
+    }
     unsigned int tbo0;
     glGenBuffers(1, &tbo0);
     glBindBuffer(GL_TEXTURE_BUFFER, tbo0);
@@ -139,13 +178,17 @@ int main()
     glBindTexture(GL_TEXTURE_BUFFER, trianglesTextureBuffer);
     glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, tbo0);
 
-
+  
+    //
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_BUFFER, trianglesTextureBuffer);
+    glUniform1i(glGetUniformLocation(testShader->ID, "triangles"), 0);
     //VBO绘制4个点需要传给VAO六个参数浪费性能，因此使用EBO（索引缓冲对象）
 
 #pragma region Imgui
 
     app.Init(window);
-
+    bindData();
 
 #pragma endregion
     while (!glfwWindowShouldClose(window))//glfwWindowShouldClose判断用户关不关弹窗
@@ -154,13 +197,9 @@ int main()
         app.RenderUI();
 #pragma endregion
 
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);//设置清屏颜色
 
 
-        //camera.UpdateCameraPos();
-        //清屏
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);//设置清屏颜色
-
-      
 
         //开启深度测试
         glEnable(GL_DEPTH_TEST);
@@ -176,10 +215,14 @@ int main()
         glStencilFunc(GL_ALWAYS, 1, 0xFF); // 所有的片段都应该更新模板缓冲
         glStencilMask(0xFF); // 启用模板缓冲写入
 
-        PrepareRender(testShader,testModel);
-       // testModel.Draw(*testShader);
-        bindData();
+        PrepareRender(testShader, testModel);
+        // testModel.Draw(*testShader);
+       
+
         draw(testShader->ID);
+
+
+
 
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
@@ -197,7 +240,7 @@ int main()
     return 0;
 }
 
-void PrepareRender(Shader* testShader,Model& testModel)
+void PrepareRender(Shader* testShader, Model& testModel)
 {
     testShader->use();
     testShader->setVec3("eye", app.cameraPos);
@@ -209,11 +252,12 @@ void PrepareRender(Shader* testShader,Model& testModel)
     testShader->setInt("height", height);
     testShader->setVec3("eye", app.cameraPos);
     testShader->setVec3("lightPos", app.lightPos);
-    testShader->setInt("nTriangles", testModel.meshes[0].indices.size() / 3);
-    glUniform1ui(glGetUniformLocation(testShader->ID, "frameCounter"), app.frameCount++);// 传计数器用作随机种子
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_BUFFER, trianglesTextureBuffer);
-    glUniform1i(glGetUniformLocation(testShader->ID, "triangles"), 0);
+    testShader->setInt("nTriangles", 2 * testModel.meshes[0].indices.size() / 3);
+    testShader->setInt("frameCounter", app.frameCounter);// 传计数器用作随机种子
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, lastFrame);
+    glUniform1i(glGetUniformLocation(testShader->ID, "lastFrame"), 2);
+
 
 
 }

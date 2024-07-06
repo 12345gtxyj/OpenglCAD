@@ -21,6 +21,11 @@ https://blog.csdn.net/sdgfafg_25/article/details/136450833?ops_request_misc=%257
 
 
 2024/7/6 加入GPU版光线追踪
-光线追踪参考
-
+参考
 https://github.com/AKGWSB/EzRT
+
+![img_2.png](img_2.png)
+
+
+帧缓冲累积
+![img_3.png](img_3.png)

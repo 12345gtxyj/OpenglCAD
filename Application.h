@@ -13,7 +13,7 @@ public:
     glm::vec3 scale;
     glm::vec3 lightPos;
     glm::vec3 cameraPos;
-    int frameCount = 0;
+    int frameCounter;
     bool isShowLightPos;
     bool isShowPos;
     bool isShowRot;
