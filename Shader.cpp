@@ -1,13 +1,6 @@
 #define GLEW_STATIC
-#include<GL/glew.h>
-#include<GLFW/glfw3.h>
 #include "Shader.h"
-#include<iostream>
-#include<fstream>
-#include <sstream>
 using namespace std;
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 //using namespace std::exception;
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
 {
@@ -92,6 +85,10 @@ void Shader::setVec3(string name, float x, float y, float z)
 void Shader::setVec3(string name, glm::vec3& value)
 {
 		glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
+}
+void Shader::setMat4(string name, glm::mat4& value)
+{
+	glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 void Shader::setFloat(string name, float x)
 {
